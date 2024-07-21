@@ -1,6 +1,15 @@
-# Welcome to your CDK TypeScript project
+# Running code after returning a response from an AWS Lambda functions
 
-This is a blank project for CDK development with TypeScript.
+This project explores the ability to run Lambda functions and return the responses using [different strategies](https://aws.amazon.com/blogs/compute/running-code-after-returning-a-response-from-an-aws-lambda-function/) such as:
+
+- Asynchronous invocation
+- Response streaming
+- Lambda extensions
+- Custom runtime
+
+## Deployment
+
+This project uses for CDK development & deployment with TypeScript.
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 

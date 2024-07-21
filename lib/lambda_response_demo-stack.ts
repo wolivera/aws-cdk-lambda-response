@@ -1,16 +1,52 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export class LambdaResponseDemoStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-
-    // The code that defines your stack goes here
-
-    // example resource
-    // const queue = new sqs.Queue(this, 'LambdaResponseDemoQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    
+    const asyncTaskFunction = new lambda.Function(this, "AsyncTaskFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "async-task-function.handler",
+      code: lambda.Code.fromAsset("./src")
+    })
+    const asyncTaskFunctionArn = asyncTaskFunction.functionArn;
+    
+    const mainSyncFunction = new lambda.Function(this, "MainSyncFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "main-sync-function.handler",
+      code: lambda.Code.fromAsset("./src"),
+      environment: {
+        "ASYNC_FUNCTION": asyncTaskFunctionArn,
+      },
+    });
+    const mainSyncFunctionArn = mainSyncFunction.functionArn;
+    
+    // Grant invoke permissions
+    asyncTaskFunction.grantInvoke(mainSyncFunction);
+    
+    const streamingFunction = new lambda.Function(this, "StreamingFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "streaming-function.handler",
+      code: lambda.Code.fromAsset("./src")
+    })
+    
+    // Define the Lambda function URL resource
+    const mainSyncFunctionUrl = mainSyncFunction.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+    });
+    const streamingFunctionUrl = streamingFunction.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+    });
+    
+    // Define a CloudFormation output for the URL
+    new cdk.CfnOutput(this, 'MainSyncLambdaUrl', {
+      value: mainSyncFunctionUrl.url,
+    });
+    new cdk.CfnOutput(this, 'StreamingLambdaUrl', {
+      value: streamingFunctionUrl.url,
+    });
   }
 }
