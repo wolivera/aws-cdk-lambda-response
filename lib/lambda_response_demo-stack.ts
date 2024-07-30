@@ -31,13 +31,24 @@ export class LambdaResponseDemoStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "streaming-function.handler",
       code: lambda.Code.fromAsset("./src")
-    })
+    });
+    
+    const extensionLayerArn = 'arn:aws:lambda:us-east-1:xxyyzz:layer:nodejs-extension:1'; // replace with your extension ARN
+    const extensionFunction = new lambda.Function(this, "ExtensionsFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "extensions-function.handler",
+      code: lambda.Code.fromAsset("./src"),
+      layers: [lambda.LayerVersion.fromLayerVersionArn(this, 'ImportedLayer', extensionLayerArn)],
+    });
     
     // Define the Lambda function URL resource
     const mainSyncFunctionUrl = mainSyncFunction.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
     });
     const streamingFunctionUrl = streamingFunction.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+    });
+    const extensionsFunctionUrl = extensionFunction.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
     });
     
@@ -47,6 +58,9 @@ export class LambdaResponseDemoStack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, 'StreamingLambdaUrl', {
       value: streamingFunctionUrl.url,
+    });
+    new cdk.CfnOutput(this, 'ExtensionsLambdaUrl', {
+      value: extensionsFunctionUrl.url,
     });
   }
 }
